@@ -1,0 +1,249 @@
+%_N_PENDELPROGRAMA_MPF
+;$PATH=/_N_WKS_DIR/_N_OP1095_EQUINOX_WPD
+;ORGANISATIONSPROGRAMM BOSCH SE
+;V1.5 / 04.Aug 2005 / KIC
+;________________________________________________________________
+;Zusatzparameter fuer GMDAT und HYUNDAI
+DEF REAL _BP, _BPX, _BPY, _BPX1, _BPY1, _BPX2, _BPY2, _BPPINX, _BPPINY
+DEF INT MASCHINE, TISCHSEITE, TEMPCOMPFOLGE
+DEF STRING[24] PROG_BEAR_TS1, PROG_NP_TS1, PROG_BEAR_TS2, PROG_NP_TS2
+R450=103            ;102 QUEDA / 103 NORMAL
+M=R450;
+;________________________________________________________________
+;Selektion Maschine: BAZ oder TBZ
+;Eintrag  =0   - BAZ 
+;         =1   - TBZ 
+MASCHINE  =0     ;<- hier eintragen <- !!!
+;________________________________________________________________
+;Selektion Tischseite/Bearbeitung
+;Eintrag  =0   - Bearbeitung auf beiden Tischseiten 
+;         =1   - Bearbeitung nur auf Tischseite1
+;         =2   - Bearbeitung nur auf Tischseite2
+TISCHSEITE=0     ;<- hier eintragen <- !!!
+;________________________________________________________________
+;Verweilzeit zur Bearbeitung auf nur einer Tischseite
+;Eintrag  = Minimum der Dauer des Spuelzyklus in Sekunden
+$AC_PARAM[1]=12 ;<- Hier eintragen <-!!!
+;________________________________________________________________
+;________________________________________________________________
+;Parameter fuer Tischseite 1
+PROG_BEAR_TS1="L100_EQUINOX";<-Prog Bearbeitung <- !!!
+PROG_NP_TS1="OFFSET_MESA1" ;<- Progr Nullpunkte <- !!!
+;
+$AC_PARAM[11]=60     ;POSITION A-ACHSE ZUR TEMP.KOMPENSATION
+$AC_PARAM[13]=195    ;POSITION C-ACHSE ZUR TEMP.KOMPENSATION
+R343=2000            ;VORSCHUB SPUELZYKLUS IN MM/MIN
+R341=60              ;POSITION A-ACHSE / ROHTEILBELADUNG 
+R342=180             ;POSITION C-ACHSE ZUR ROHTEILBELADUNG
+R344=10
+R345=240
+R346=30
+R347=0
+R361=R344
+R362=R345
+R364=R344
+R365=R345
+R366=R344
+R367=R345
+$AC_PARAM[15]=1      ;WERKZEUGNUMMER ZUR TEMPERATURKOMPENSATION
+$AC_PARAM[17]=132    ;ACHSREIHENFOLGE ZUR TEMPERATURKOMPENSATION
+                     ;X-ACHSE=1 / Y-ACHSE=2 / Z-ACHSE=3
+;________________________________________________________________
+;________________________________________________________________
+;Parameter fuer Tischseite 2
+PROG_BEAR_TS2="L200_EQUINOX";<- PROG BEARBEITUNG <- !!!
+PROG_NP_TS2="OFFSET_MESA2" ;<- PROG NULLPUNKTE <- !!!
+;
+$AC_PARAM[12]=60     ;POSITION U-ACHSE ZUR TEMP.KOMPENSATION
+$AC_PARAM[14]=195    ;POSITION W-ACHSE ZUR TEMP.KOMPENSATION
+R353=2000            ;VORSCHUB SPUELZYKLUS IN MM/MIN
+R351=60              ;POSITION A-ACHSE / ROHTEILBELADUNG 
+R352=180             ;POSITION C-ACHSE ZUR ROHTEILBELADUNG
+R354=10
+R355=240
+R356=30
+R357=0
+R371=R344
+R372=R345
+R374=R344
+R375=R345
+R376=R344
+R377=R345
+$AC_PARAM[16]=999    ;WERKZEUGNUMMER ZUR TEMPERATURKOMPENSATION
+$AC_PARAM[18]=132    ;ACHSREIHENFOLGE ZUR TEMPERATURKOMPENSATION
+                     ;X-ACHSE=1 / Y-ACHSE=2 / Z-ACHSE=3
+;________________________________________________________________
+;________________________________________________________________
+;________________________________________________________________
+;________________________________________________________________
+;________________________________________________________________
+;________________________________________________________________
+;________________________________________________________________
+;KEINE AENDERUNGEN UNTERHALB DIESER LINIE DURCHFUEHREN
+;DO NOT CHANGE BELOW THIS LINE
+;________________________________________________________________
+;________________________________________________________________
+;________________________________________________________________
+;________________________________________________________________
+;________________________________________________________________
+;________________________________________________________________
+;________________________________________________________________
+REENTRY(3,60,180)
+$AC_PARAM[7]=1       ;AUSGABE "TEMPCOMPDATEN" IN DATEI                                  MIT AUSGABE =1 / OHNE =999
+$AC_PARAM[5]=11      ;SPANNVORRICHTUNG OEFFNEN JA=11 / NEIN=999
+M260                 ;ABFRAGE SPANNVORRICHTUNG AKTIV?
+TCARR=0
+G0 G90 G153 G17 Z0 D0 M9 M5 M129
+IF $A_IN[25]
+ IF MASCHINE==0
+ G0 G153 X0 Y0 Z0 D0 AA=DC(R341) CC=DC(R342)
+ ELSE
+ G0 G153 X-475 Y0 Z0 D0 AA=DC(R341)
+ ENDIF
+ELSE
+ IF MASCHINE==0
+ G0 G153 X0 Y0 Z0 D0 AA=DC(R351) CC=DC(R352)
+ ELSE
+ G0 G153 X-475 Y0 Z0 D0 AA=DC(R351)
+ ENDIF
+ENDIF
+;________________________________________________________________
+IF R0==111 ;Tischseiteneinstieg nach manueller Auswahl
+R0=0
+$AC_PARAM[2]=999 $AC_PARAM[3]=999 $AC_PARAM[4]=999 
+GOTOF TS2
+ENDIF
+;________________________________________________________________
+ANFANG: $AC_PARAM[0]=0 $AC_PARAM[2]=999 $AC_PARAM[3]=999 $AC_PARAM[4]=999 
+;________________________________________________________________
+;TISCHSEITE1
+WHEN TISCHSEITE==2 DO M92 $AC_PARAM[0]=$AC_PARAM[1] $AC_PARAM[2]=228 $AC_PARAM[3]=$AC_PARAM[5] $AC_PARAM[4]=20
+WHEN TISCHSEITE==0 DO $AC_PARAM[0]=0 $AC_PARAM[2]=228 $AC_PARAM[3]=$AC_PARAM[5] $AC_PARAM[4]=20
+  IF (MASCHINE==0) AND ($P_TOOLNO>0.9) ;BAZ+Wkzg. in Spindel?
+    IF $TC_DP3[$P_TOOLNO,1]>120 
+      G0 G153 Z0 D0 
+      G0 G153 X0 Y0 
+      G0 G153 AA=DC(0) 
+      T0 M6 
+      G0 G153 X0 Y0 AA=DC(R351)
+      G4 F1
+    ENDIF 
+  ENDIF
+M31 M=$AC_PARAM[2]                           ;AFW+SPUELEN
+M=$AC_PARAM[3] M=$AC_PARAM[4] ;M428          ;SPAVO+TUERE OEFFNEN
+G4 F=$AC_PARAM[0]                            ;G4 WG. SPUELZYKLUS
+;G4 F25                        ;DESABILITAR
+;GOTOF VIN1
+;G4 F10000;VIN
+$AC_PARAM[0]=0 $AC_PARAM[2]=999 $AC_PARAM[3]=999 $AC_PARAM[4]=999
+IF TISCHSEITE==2 GOTOF TS2
+R470=1
+CALL PROG_NP_TS1 
+H2
+USERSTRAT
+H1
+CALL PROG_BEAR_TS1 
+TCARR=0
+IF MASCHINE==0
+G0 G153 X0 Y0 Z0 D0 AA=DC(R341) CC=DC(R342)
+ELSE
+G0 G153 X-475 Y0 Z0 D0 AA=DC(R341)
+ENDIF
+VIN1:
+;________________________________________________________________
+;TISCHSEITE2
+TS2: WHEN TISCHSEITE==1 DO M92 $AC_PARAM[0]=$AC_PARAM[1] $AC_PARAM[2]=228 $AC_PARAM[3]=$AC_PARAM[5] $AC_PARAM[4]=20
+WHEN TISCHSEITE==0 DO $AC_PARAM[0]=0 $AC_PARAM[2]=228 $AC_PARAM[3]=$AC_PARAM[5] $AC_PARAM[4]=20
+  IF (MASCHINE==0) AND ($P_TOOLNO>0.9) ;BAZ+Wkzg. in Spindel?
+      IF $TC_DP3[$P_TOOLNO,1]>120 
+      G0 G153 Z0 D0 
+      G0 G153 X0 Y0 
+      G0 G153 AA=DC(0)
+      T0 M6
+      G0 G153 X0 Y0 AA=DC(R341)
+      G4 F1
+    ENDIF 
+  ENDIF
+M32 M=$AC_PARAM[2]                           ;AFW+SPUELEN
+M=$AC_PARAM[3] M=$AC_PARAM[4] ;M428          ;SPAVO+TUERE OEFFNEN
+G4 F=$AC_PARAM[0]                            ;G4 WG. SPUELZYKLUS
+;G4 F25                        ;DESABILITAR
+;GOTOF VIN2
+;G4 F10000;VIN
+IF TISCHSEITE==1 GOTOB ANFANG
+R470=2
+CALL PROG_NP_TS2
+;USERSTRAT
+CALL PROG_BEAR_TS2
+TCARR=0
+IF MASCHINE==0
+G0 G153 X0 Y0 Z0 D0 AA=DC(R351) CC=DC(R352)
+ELSE
+G0 G153 X-475 Y0 Z0 D0 AA=DC(R351)
+ENDIF
+M60
+VIN2:
+GOTOB ANFANG
+M30
+
+
+;________________________________________________________________
+;________________________________________________________________
+LISTUNG DER VERWENDETEN PARAMETER
+$AC_PARAM[0] = ZWISCHENSPEICHER VERWEILZEIT 
+$AC_PARAM[1] = VERWEILZEIT SPUELZYKLUS BEI BEARBEITUNG AUF NUR 
+               EINER TISCHSEITE
+$AC_PARAM[2] = M-FUNKTION SPUELZYKLUS (M228)
+$AC_PARAM[3] = SPANNVORRICHTUNG OEFFNEN (M11)
+$AC_PARAM[4] = SCHUTZTUERE OEFFNEN BELADESEITE (M20)
+$AC_PARAM[5] = ZWISCHENSPEICHER SPANNVORRICHTUNG
+$AC_PARAM[6] = SCHMIERMERKER
+$AC_PARAM[6] = MERKER FUER AUSGABE "TEMPCOMPDATEN"
+;________________________________________________________________
+PARAMETER FUER ARBEITSFELD1 (TISCHSEITE1)
+R341           = POSITION A-ACHSE ZUR ROHTEILBESTUECKUNG 
+R342           = POSITION C-ACHSE ZUR ROHTEILBESTUECKUNG 
+$AC_PARAM[11]  = POSITION A-ACHSE ZUR TEMP.KOMPENSATION
+$AC_PARAM[13]  = POSITION C-ACHSE ZUR TEMP.KOMPENSATION
+R343           = VORSCHUB A/C-ACHSE IM SPUELZYKLUS
+R344           = ZWISCHENPOSITION1 A-ACHSE IM SPUELZYKLUS
+R345           = ZWISCHENPOSITION1 C-ACHSE IM SPUELZYKLUS
+R346           = ZWISCHENPOSITION2 A-ACHSE IM SPUELZYKLUS
+R347           = ZWISCHENPOSITION2 C-ACHSE IM SPUELZYKLUS
+$AC_PARAM[15]  = WERKZEUGNUMMER ZUR TEMPERATURKOMPENSATION
+$AC_PARAM[17]  = ACHSREIHENFOLGE ZUR TEMPERATURKOMPENSATION
+                 X-ACHSE=1 / Y-ACHSE=2 / Z-ACHSE=3
+
+;________________________________________________________________
+PARAMETER FUER ARBEITSFELD2 (TISCHSEITE2)
+R351           = POSITION U-ACHSE ZUR ROHTEILBESTUECKUNG 
+R352           = POSITION W-ACHSE ZUR ROHTEILBESTUECKUNG 
+$AC_PARAM[12]  = POSITION U-ACHSE ZUR TEMP.KOMPENSATION
+$AC_PARAM[14]  = POSITION W-ACHSE ZUR TEMP.KOMPENSATION
+R353           = VORSCHUB U/W-ACHSE IM SPUELZYKLUS
+R354           = ZWISCHENPOSITION1 U-ACHSE IM SPUELZYKLUS
+R355           = ZWISCHENPOSITION1 W-ACHSE IM SPUELZYKLUS
+R356           = ZWISCHENPOSITION2 U-ACHSE IM SPUELZYKLUS
+R357           = ZWISCHENPOSITION2 W-ACHSE IM SPUELZYKLUS
+$AC_PARAM[16]  = WERKZEUGNUMMER ZUR TEMPERATURKOMPENSATION
+$AC_PARAM[18]  = ACHSREIHENFOLGE ZUR TEMPERATURKOMPENSATION
+                 X-ACHSE=1 / Y-ACHSE=2 / Z-ACHSE=3
+;________________________________________________________________
+
+V1.5 / 04.Aug 2005 / KIC
+       Bei Arbeitsfeldwechsel Abfrage BAZ 
+       erweitert mit Wkzg in Spi vorhanden
+V1.4 / 27.JULI 2005 / KIC
+       DATENSCHREIBEN IN PROGRAMM TS27_CMP_XYZ UND                       $AC_PARAM[7] HINZU
+V1.3 / 20.JULI 2005 / KIC
+       fuer Spuelzyklus $AC_PARAM[n] ersetzt durch R-Parameter
+       Kommentare ueberarbeitet
+V1.2 / 14.JULI 2005 / BUAN
+       PROGRAMMOPTIMIERUNG: VERWENDUNG FUER BAZ UND TBZ DURCH            SELEKTION MASCHINE
+V1.1 / 06.JUNI 2005 / KIC
+       UEBERARBEITET PLUS ZUSATZFUNKTIONEN (SPUELEN/PRAOGDEF.)
+       VORAUSSETZUNG: PLC-SOFTWARESTAND *6 UND HOEHER
+V1.0 / 15.MAI 2005 / KIC
+       ERSTELLLUNG
+
+M30
